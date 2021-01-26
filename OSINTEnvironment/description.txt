@@ -1,0 +1,18 @@
+OSINT tool (inputs) :
+
+(people)
+LittleBrother (phone, email, name, address, username)
+sherlock (username)
+Ghunt (email)
+social-analyzer (
+spiderfoot (name, username, phone, email)
+h8mail
+
+
+(company)
+theHarvester
+Amass
+
+
+Database : initial info, [(info / reward), ...]
+Rewards : finding info, negative for time taken

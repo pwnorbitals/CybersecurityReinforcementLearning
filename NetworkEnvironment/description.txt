@@ -1,0 +1,32 @@
+pour le réseau, je fais un truc comme ça :
+
+1) LE JEU
+1 jeu c'est 1 réseau, 1 attaquant, 1 défenseur
+Chaque round c'est l'attaque de l'attaquant et le défenseur a une reward proportionnelle au temps pour prendre X% du réseau
+Game over quand l'attaquant prend plus de temps qu'une valeur seuil pour prendre X% du réseau ou s'il est détecté à chaque fois sur les Y derniers rounds
+
+2) LE RESEAU
+1 réseau c'est Rn noeuds (visibles au défenseur, invisibles à l'attaquant)
+A sa création, une liste de noeuds "obligatoires" permet d'initialiser le réseau
+
+3) LES NOEUDS
+1 noeud c'est un identifiant unique Nu, une valeur défensive (combien "vaut" la machine) Nv, une valeur de détection Nd, un nombre aléatoire k de vecteurs d'attaque Na_k et de capacités de défense Nd_k.
+Chaque Na_k est aléatoire et représente la capacité de l'attaque. L'attaque réussit si sa capacité est plus grande que la capacité de défense associée. Invisible au défenseur
+Chaque Nd_k est initialisé au choix du défenseur [0-99], avec une fonction exponentielle négative de reward, et représente la capacité de la défense.  Invisible à l'attaquant
+Nd est initialisé au choix du défenseur [0-99], avec une fonction exponentielle négative  de reward, et représente la capacité de détection en cas de succès d'une attaque. Invisible à l'attaquant
+
+ex : 
+si on veut 0 points de détection pour l'attaque X, ça coûte -0. 
+Si on en veut 1, ça coûte -0.01. Si on en veut 10, ça coute -1. 
+Si on en veut 99, ça coute 70. Si on en veut 99.99, ça coute -2000. 
+Si on en veut 100, ça coute -infini (impossible)
+
+4) LES ACTEURS
+Le défenseur a une vision sur tous les noeuds. A chaque partie, il a les actions suivantes :
+- renforcer la détection pour un noeud
+- renforcer la défense d'une attaque pour un noeud
+- insérer un noeud entre deux noeuds existants (coûte de la reward, en plus des coûts de Nd_k et Nd choisies)
+
+L'attaquant a une vision sur les noeuds auquel il a accès. A chaque round, il a les actions suivantes :
+- attaquer un noeud par le vecteur d'attaque Na_k. Une attaque augmente la capacité de cette attaque d'une valeur fixe et induit un coût de reward fixe. 
+Une attaque à succès induit une reward proportionnelle à la valeur défensive de la machine (inconnue a priori par l'attaquant)
