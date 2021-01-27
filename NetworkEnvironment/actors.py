@@ -1,12 +1,13 @@
 class CyberAttacker():
     def __init__(self):
-        self.currentReward = 0
+        self.score = 0
 
     def act(self, gameState):
         pass
 
 class CyberDefender():
     def __init__(self):
+        self.score = 0
         pass
 
     def act(self, gameState):
@@ -54,7 +55,7 @@ class HumanDefender(CyberDefender):
         print("The new node has X attack vectors")
         print("choose the defense values :")
 
-class humanAttacker(CyberAttacker):
+class HumanAttacker(CyberAttacker):
     def act(self, gameState):
         print("The current game state is :")
         print(gameState)
@@ -64,8 +65,8 @@ class humanAttacker(CyberAttacker):
     def showState(self, state):
         print(gameState)
 
-class randomAttacker(CyberAttacker):
+class RandomAttacker(CyberAttacker):
     pass
 
-class randomDefender(CyberDefender):
+class RandomDefender(CyberDefender):
     pass

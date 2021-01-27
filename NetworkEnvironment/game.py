@@ -1,16 +1,16 @@
-import network
+from . import network
 
 class CyberGame:
-    def __init__(self, network, attacker, defender, settings={}):
+    def __init__(self, attacker, defender, network, settings={}):
         self.baseNetwork = network
         self.attacker = attacker
         self.defender = defender
         self.stepHooks = []
         self.endHooks = []
 
-        defaultSettings = {defUnitPunition : 1}
+        defaultSettings = {"defUnitPunition" : 1}
         self.settings = settings if settings else defaultSettings
-        self.state = {elapsedTime : 0, gameOverRecorded: false, network: network}
+        self.state = CyberGameState(self) 
 
     def getState(self):
         return self.state
@@ -22,28 +22,19 @@ class CyberGame:
         return DefenderGameState(self.state)
 
     def gameEnd(self):
-        self.defender.punish(self.settings.defUnitPunition * self.state.elapsedTime)
+        self.defender.punish(self.settings["defUnitPunition"] * self.state.elapsedTime)
         self.state.gameOverRecorded = True
         for hook in self.endHooks:
             hook()
 
     def isGameOver(self):
         return \
-            self.network.totalPwnValue() / self.network.totalValue() \
+            self.state.totalPwnValue() / self.state.totalValue() \
             >= \
             self.gameSettings.NodePwnThreshold
 
     def step(self):
-        if self.isGameOver():
-            if not self.state.gameOverRecorded:
-                self.gameEnd()
-            else:
-                return
-
         attacker.act(self.getAttackState())
-
-        for hook in self.stepHooks:
-            hook()
 
     def addStepHook(self, hook):
         self.stepHooks.append(hook)
@@ -51,10 +42,27 @@ class CyberGame:
     def addEndHook(self, hook):
         self.endHooks.append(hook)
 
+    def run(self):
+        while not self.isGameOver() :
+            self.step()
+            for hook in self.stepHooks:
+                hook()
+        self.gameEnd()
+        return self.state
+
 
 class CyberGameState:
     def __init__(self, game):
-        pass
+        self.elapsedTime = 0
+        self.gameOverRecorded = False
+        self.network = game.baseNetwork
+
+    def totalPwnValue(self):
+        pwnValue = lambda node : node.defValue if node.isPwned() else 0
+        return sum(map(pwnValue, self.network.nodes))
+
+    def totalValue(self):
+        return sum(map(lambda node : node.defValue, self.network.nodes))
 
 class AttackerGameState(CyberGameState):
     def __init__(self, gameState):
@@ -83,7 +91,7 @@ class DefenderGameState(CyberGameState):
     def reinforceDetection(self, node, increment):
         pass
 
-    def insertNode(self, left, right, stuff, stuff, stuff):
+    def insertNode(self, left, right):
         pass
 
     def endTurn(self):
