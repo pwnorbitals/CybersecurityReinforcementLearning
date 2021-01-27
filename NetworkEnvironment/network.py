@@ -92,6 +92,12 @@ class CyberNetwork:
     def totalValue(self):
         return sum(map(lambda node : node[1].defValue, self.current.nodes))
 
+    def nodes(self):
+        return [n[1] for n in self.current.nodes()]
+
+    def links(self):
+        return [(u[1], v[1]) for u,v in self.current.edges()]
+
     def isPlayable(self):
         # must have no islands, at least 1 entry node, at least 1 defensive value
         islandCount = nx.number_connected_components(self.joined)
@@ -110,6 +116,9 @@ class CyberNetwork:
             islandCount == 1 and \
             entryCount > 0 and \
             totalDef > 0
+
+    def nodeHasNeighbour(self, condition):
+        return [n if condition(n) else None for n in self.nodes()]
             
 
 
