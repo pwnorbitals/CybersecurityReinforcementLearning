@@ -26,8 +26,8 @@ def fromYedGraphML(path):
 
 class CyberNode:
     def __init__(self, value, isEntry, maxVectors = 10):
-        self.detectionValue = 0
-        self.atqVectors = [0] * random.randint(0, maxVectors)
+        self.detection = 0
+        self.atqVectors = [0] * random.randint(1, maxVectors)
         self.defense = [0] * len(self.atqVectors)
         self.value = value
         self.isPwned = False
@@ -48,12 +48,12 @@ class NodeForAttacker:
 
 class NodeForDefender:
     def __init__(self, node):
-        self.detectionValue = node.detectionValue
+        self.detection = node.detection
         self.defense = node.defense
         self.value = node.value
         self.isPwned = node.isPwned
         self.isEntry = node.isEntry
-        self.nid = node.id()
+        self.nid = id(node)
 
 # https://networkx.org/documentation/stable/tutorial.html
 class CyberNetwork:
@@ -78,21 +78,23 @@ class CyberNetwork:
     def removeNode(self, node):
         # not a node from an island
         if node in joined:
-            raise "Cannot remove an original node"
+            print("Cannot remove an original node")
+            return
         self.current.remove_node(node)
 
     def insertLink(self, left, right):
         # not between two nodes of an island
         if left in joined and right in joined:
-            raise "Cannot insert a link between two nodes of the original islands"
+            print("Cannot insert a link between two nodes of the original islands")
+            return
         self.current.add_edge(left, right)
 
     def removeLink(self, left, right):
         # not between two nodes of an island
         if left in joined and right in joined:
-            raise "Cannot remove a link between two nodes of the original islands"
+            print("Cannot remove a link between two nodes of the original islands")
+            return
         self.current.remove_edge(left, right)
-        pass
 
     def display(self):
         nx.draw(self.joined, with_labels=True, font_weight='bold')
@@ -133,12 +135,11 @@ class CyberNetwork:
     def nodeHasNeighbour(self, condition):
         return [n if condition(n) else None for n in self.nodes()]
             
-
     def findNodeFromAttacker(self, node):
         return [n[1] for n in self.current.nodes() if id(n[1]) == node.nid]
 
     def findNodeFromDefender(self, node):
-        pass
+        return [n[1] for n in self.current.nodes() if id(n[1]) == node.nid]
 
 
 

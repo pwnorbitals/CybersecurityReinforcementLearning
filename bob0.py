@@ -12,7 +12,7 @@ def maybeInspectResults(result):
     pass
 
 attacker = actors.RandomAttacker()
-defender = actors.HumanDefender()
+defender = actors.RandomDefender()
 
 net = network.fromYedGraphML("./entry.graphml")
 # net.display()
@@ -22,6 +22,7 @@ last10times = []
 timeThreshold = 1500
 gamesThreshold = 1000
 while nbGames < gamesThreshold or np.mean(last10times) < timeThreshold :
+    print("New game starting ...")
     thisGame = game.CyberGame(attacker, defender, net)
     thisGame.addStepHook(lambda state : maybeInspectState(state))
     results = thisGame.run()

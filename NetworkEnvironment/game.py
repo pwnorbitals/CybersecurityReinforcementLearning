@@ -7,6 +7,7 @@ class CyberGameSettings:
         self.nodePwnThreshold = 0.25
         self.attackCost = 10
         self.maxAtqPower = 10
+        self.wrongEndTurnPunition = 10
 
 class CyberGame:
     def __init__(self, attacker, defender, network, settings=CyberGameSettings()):
@@ -18,9 +19,6 @@ class CyberGame:
 
         self.settings = settings
         self.state = CyberGameState(self) 
-
-    def getState(self):
-        return self.state
 
     def getAttackState(self):
         return AttackerGameState(self)
@@ -38,11 +36,18 @@ class CyberGame:
         return \
             self.network.totalPwnValue() / self.network.totalValue() \
             >= \
-            self.settings.nodePwnThreshold
+            self.settings.nodePwnThreshold \
+                or \
+            self.state.attackDetected == True
 
-    def step(self):
+    def defenseStep(self):
+        action = self.defender.act(self.getDefenseState())
+        self.registerDefense(action)
+
+    def attackStep(self):
         action = self.attacker.act(self.getAttackState())
         self.registerAction(action)
+        self.state.elapsedTime += 1
 
     def addStepHook(self, hook):
         self.stepHooks.append(hook)
@@ -51,8 +56,10 @@ class CyberGame:
         self.endHooks.append(hook)
 
     def run(self):
+        while not self.network.isPlayable():
+            self.defenseStep()
         while not self.isGameOver() :
-            self.step()
+            self.attackStep()
             for hook in self.stepHooks:
                 hook(self.state)
         self.gameEnd()
@@ -60,7 +67,7 @@ class CyberGame:
 
 
 
-    def registerAction(self, action):
+    def registerAttack(self, action):
         if action["type"] == "attack":
             attackedNode = self.network.findNodeFromAttacker(action["target"])
             if len(attackedNode) != 1:
@@ -68,15 +75,42 @@ class CyberGame:
             attackedNode = attackedNode[0]
             if attackedNode.defense[action["vector"]] > attackedNode.atqVectors[action["vector"]]:
                 attackedNode.isPwned = True
+                if random.randrange(100) < attackedNode.defense[action["vector"]]:
+                    self.state.attackDetected = True
             else:
                 attackedNode.atqVectors[action["vector"]] += random.randint(0, self.settings.maxAtqPower)
             self.attacker.score -= self.settings.attackCost
+            
 
-        elif action["type"] == "changeDefense":
-            pass
+        else:
+            raise RuntimeError("No such action " + action["type"] + " !")
+
+    def registerDefense(self, action):
+        if action["type"] == "changeDefense":
+            target = self.network.findNodeFromDefender(action["target"])
+            old_value = target.defense[action["vector"]]
+            new_value = action["value"] 
+
+            punition_fct = lambda x : 1/(1-1/(x/100)) if x != 0 else 0
+            punition = punition_fct(new_value) - punition_fct(old_value)
+
+            target.defense[action["vector"]] = action["value"] 
+            defender.score -= punition
 
         elif action["type"] == "changeDetection":
-            pass
+            target = self.network.findNodeFromDefender(action["target"])
+            if len(target) != 1:
+                raise RuntimeError("Error in finding node from defender : " + str(len(target)) + " results")
+            target = target[0]
+
+            old_value = target.detection
+            new_value = action["value"] 
+
+            punition_fct = lambda x : 1/(1-1/(x/100)) if x != 0 else 0
+            punition = punition_fct(new_value) - punition_fct(old_value)
+
+            target.detection = action["value"] 
+            self.defender.score -= punition
 
         elif action["type"] == "insertNode":
             pass
@@ -84,8 +118,20 @@ class CyberGame:
         elif action["type"] == "removeNode": 
             pass
 
+        elif action["type"] == "endTurn":
+            if self.network.isPlayable():
+                self.state.defenderIsDone = True
+            else:
+                self.defender.score -= self.settings.wrongEndTurnPunition
+
+        elif action["type"] == "insertLink":
+            pass
+
+        elif action["type"] == "removeLink":
+            pass
+        
         else:
-            raise "No such action !"
+            raise RuntimeError("No such action " + action["type"] + " !")
 
 
 class CyberGameState:
@@ -93,6 +139,8 @@ class CyberGameState:
         self.elapsedTime = 0
         self.gameOverRecorded = False
         self.network = game.network
+        self.attackDetected = False
+        self.defenderIsDone = False
 
 
 class AttackerGameState(CyberGameState):
@@ -115,8 +163,14 @@ class AttackerGameState(CyberGameState):
         
 
 class DefenderGameState(CyberGameState):
-    def __init__(self, gameState):
-        pass
+    def __init__(self, game):
+        self.nodes =  [network.NodeForDefender(node) for node in game.network.nodes()] 
+
+        self.links = []
+        for link in game.network.links():
+            first = next(node for node in self.nodes if id(link[0]) == node.nid)  
+            second = next(node for node in self.nodes if id(link[1]) == node.nid)
+            self.links.append((first, second))  
 
     def changeDefense(self, node, vector, value):
         return {"type": "changeDefense", "target": node, "vector": vector, "value": value}
@@ -129,6 +183,12 @@ class DefenderGameState(CyberGameState):
 
     def removeNode(self, node):
         return {"type": "removeNode", "target": node}
+
+    def insertLink(self, left, right):
+        return {"type": "insertLink", "left": left, "right": right}
+
+    def removeLink(self, left, right):
+        return {"type": "removeLink", "left": left, "right": right}
 
     def endTurn(self):
         return {"type": "endTurn"}
