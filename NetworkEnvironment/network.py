@@ -14,7 +14,7 @@ def fromYedGraphML(path):
     net = nx.Graph(res)
     print("Loaded nodes : ", len(net.nodes))
 
-    labelmapping = {n[0] :(n[0], CyberNode(int(n[1]["description"]), True if n[1]["label"] == "entry" else False)) \
+    labelmapping = {n[0] : (n[0], CyberNode(int(n[1]["description"]), True if n[1]["label"] == "entry" else False)) \
         for n in net.nodes(data=True)} 
     newnet = nx.relabel_nodes(net, labelmapping)
 
@@ -25,10 +25,11 @@ def fromYedGraphML(path):
 
 
 class CyberNode:
-    def __init__(self, defValue, isEntry, maxVectors = 10):
-        self.defValue = defValue
+    def __init__(self, value, isEntry, maxVectors = 10):
         self.detectionValue = 0
         self.atqVectors = [0] * random.randint(0, maxVectors)
+        self.defense = [0] * len(self.atqVectors)
+        self.value = value
         self.isPwned = False
         self.isEntry = isEntry
 
@@ -40,6 +41,19 @@ class CyberNode:
         # to setter
         pass
 
+class NodeForAttacker:
+    def __init__(self, node):
+        self.atqVectors = node.atqVectors
+        self.nid = id(node)
+
+class NodeForDefender:
+    def __init__(self, node):
+        self.detectionValue = node.detectionValue
+        self.defense = node.defense
+        self.value = node.value
+        self.isPwned = node.isPwned
+        self.isEntry = node.isEntry
+        self.nid = node.id()
 
 # https://networkx.org/documentation/stable/tutorial.html
 class CyberNetwork:
@@ -86,11 +100,10 @@ class CyberNetwork:
 
     def totalPwnValue(self):
         pwnValue = lambda node : node.defValue if node.isPwned else 0
-        print([n[1].defValue for n in self.current.nodes])
         return sum(map(pwnValue, [n[1] for n in self.current.nodes]))
 
     def totalValue(self):
-        return sum(map(lambda node : node[1].defValue, self.current.nodes))
+        return sum(map(lambda node : node[1].value, self.current.nodes))
 
     def nodes(self):
         return [n[1] for n in self.current.nodes()]
@@ -121,7 +134,11 @@ class CyberNetwork:
         return [n if condition(n) else None for n in self.nodes()]
             
 
+    def findNodeFromAttacker(self, node):
+        return [n[1] for n in self.current.nodes() if id(n[1]) == node.nid]
 
+    def findNodeFromDefender(self, node):
+        pass
 
 
 

@@ -1,3 +1,5 @@
+import random
+
 class CyberAttacker():
     def __init__(self):
         self.score = 0
@@ -66,7 +68,11 @@ class HumanAttacker(CyberAttacker):
         print(gameState)
 
 class RandomAttacker(CyberAttacker):
-    pass
+    def act(self, gameState):
+        target = random.randint(0, len(gameState.nodes)-1)
+        vector = random.randint(0, len(gameState.nodes[target].atqVectors)-1)
+        return gameState.attack(gameState.nodes[target], vector)
 
 class RandomDefender(CyberDefender):
-    pass
+    def act(self, gameState):
+        pass

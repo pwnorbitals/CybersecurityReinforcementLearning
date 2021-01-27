@@ -1,9 +1,12 @@
 from . import network
+import random
 
 class CyberGameSettings:
-    def __init__(self, defUnitPunition=1, nodePwnThreshold=0.25):
-        self.defUnitPunition = defUnitPunition
-        self.nodePwnThreshold = nodePwnThreshold
+    def __init__(self):
+        self.defUnitPunition = 1
+        self.nodePwnThreshold = 0.25
+        self.attackCost = 10
+        self.maxAtqPower = 10
 
 class CyberGame:
     def __init__(self, attacker, defender, network, settings=CyberGameSettings()):
@@ -38,7 +41,8 @@ class CyberGame:
             self.settings.nodePwnThreshold
 
     def step(self):
-        self.attacker.act(self.getAttackState())
+        action = self.attacker.act(self.getAttackState())
+        self.registerAction(action)
 
     def addStepHook(self, hook):
         self.stepHooks.append(hook)
@@ -56,6 +60,34 @@ class CyberGame:
 
 
 
+    def registerAction(self, action):
+        if action["type"] == "attack":
+            attackedNode = self.network.findNodeFromAttacker(action["target"])
+            if len(attackedNode) != 1:
+                raise RuntimeError("Error in finding node from attacker : " + str(len(attackedNode)) + " results")
+            attackedNode = attackedNode[0]
+            if attackedNode.defense[action["vector"]] > attackedNode.atqVectors[action["vector"]]:
+                attackedNode.isPwned = True
+            else:
+                attackedNode.atqVectors[action["vector"]] += random.randint(0, self.settings.maxAtqPower)
+            self.attacker.score -= self.settings.attackCost
+
+        elif action["type"] == "changeDefense":
+            pass
+
+        elif action["type"] == "changeDetection":
+            pass
+
+        elif action["type"] == "insertNode":
+            pass
+
+        elif action["type"] == "removeNode": 
+            pass
+
+        else:
+            raise "No such action !"
+
+
 class CyberGameState:
     def __init__(self, game):
         self.elapsedTime = 0
@@ -70,30 +102,33 @@ class AttackerGameState(CyberGameState):
             lambda node : node.isPwned or \
                           node.isEntry or \
                           game.network.nodeHasNeighbour(lambda n : n.isPwned)
-        visibleNodes = [node for node in game.network.nodes() if isNodeVisible(node)] 
+        visibleNodes = [network.NodeForAttacker(node) for node in game.network.nodes() if isNodeVisible(node)] 
 
         isLinkVisible = lambda link : link[0].isPwned and link[1].isPwned
         visibleLinks = [link for link in game.network.links() if isLinkVisible(link)]
 
+        self.nodes = visibleNodes
+        self.links = visibleLinks
 
-
+    def attack(self, node, vector):
+        return {"type": "attack", "target": node, "vector": vector}
         
-
-    def attack(self, node):
-        pass
 
 class DefenderGameState(CyberGameState):
     def __init__(self, gameState):
         pass
 
-    def reinforceDefense(self, node, increment):
-        pass
+    def changeDefense(self, node, vector, value):
+        return {"type": "changeDefense", "target": node, "vector": vector, "value": value}
 
-    def reinforceDetection(self, node, increment):
-        pass
+    def changeDetection(self, node, value):
+        return {"type": "changeDetection", "target": node, "value": value}
 
     def insertNode(self, left, right):
-        pass
+        return {"type": "insertNode", "left": left, "right": right}
+
+    def removeNode(self, node):
+        return {"type": "removeNode", "target": node}
 
     def endTurn(self):
-        pass
+        return {"type": "endTurn"}
