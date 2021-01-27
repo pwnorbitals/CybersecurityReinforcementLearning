@@ -13,8 +13,10 @@ class CyberGameSettings:
         self.removeNodePunition = -10
         self.insertLinkPunition = 10
         self.removeLinkPunition = -10
-        self.inspectGameFrequencyAtq = 1 # %
-        self.inspectGameFrequencyDef = 1 # %
+        self.inspectGameFrequencyAtq = 0 # %
+        self.inspectGameFrequencyDef = 0 # %
+        self.attackerDetectedPunition = 1000
+        self.attackerDetectedReward = 100
 
 class CyberGame:
     def __init__(self, attacker, defender, network, settings=CyberGameSettings()):
@@ -71,23 +73,27 @@ class CyberGame:
     def run(self):
         while not self.state.defenderIsDone:
             self.defenseStep()
+        print("Defender is done, score : ", self.defender.score)
+        self.network.display()
         while not self.isGameOver() :
             self.attackStep()
             for hook in self.stepHooks:
                 hook(self.state)
+        print("Attacker is done, score : ", self.attacker.score)
         self.gameEnd()
         return self.state
 
 
 
     def registerAttack(self, action):
-        print("Received action", action["type"])
         if action["type"] == "attack":
             attackedNode = self.network.findNodeFromAttacker(action["target"])
             if attackedNode.defense[action["vector"]] > attackedNode.atqVectors[action["vector"]]:
                 attackedNode.isPwned = True
                 if random.randrange(100) < attackedNode.defense[action["vector"]]:
                     self.state.attackDetected = True
+                    self.attacker.score -= self.settings.attackerDetectedPunition
+                    self.defender.score += self.setting.attackerDetectedReward
             else:
                 attackedNode.atqVectors[action["vector"]] += random.randint(0, self.settings.maxAtqPower)
             self.attacker.score -= self.settings.attackCost
@@ -97,7 +103,6 @@ class CyberGame:
             raise RuntimeError("No such action " + action["type"] + " !")
 
     def registerDefense(self, action):
-        print("Received action", action["type"])
 
         try:
             if action["type"] == "changeDefense":

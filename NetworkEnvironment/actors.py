@@ -9,12 +9,18 @@ class CyberAttacker():
     def act(self, gameState):
         pass
 
+    def viewGame(self, gameState):
+        pass
+
 class CyberDefender():
     def __init__(self):
         self.score = 0
         pass
 
     def act(self, gameState):
+        pass
+
+    def viewGame(self, gameState):
         pass
 
 class HumanDefender(CyberDefender):

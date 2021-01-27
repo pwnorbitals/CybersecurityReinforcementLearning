@@ -122,7 +122,6 @@ class CyberNetwork:
         # must have no islands, at least 1 entry node, at least 1 defensive value
         islandCount = nx.number_connected_components(self.current)
         if islandCount != 1:  # quick check before looping on nodes if it's not needed
-            print("Not playable, islands : ", islandCount)
             return False
 
         entryCount = 0
@@ -131,9 +130,7 @@ class CyberNetwork:
             if node.isEntry:
                 entryCount += 1
             totalValue += node.value
-        
-        print("entryCount, totalValue : ", entryCount, totalValue)
-
+            
         return \
             islandCount == 1 and \
             entryCount > 0 and \
