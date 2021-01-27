@@ -2,7 +2,7 @@ from . import network
 
 class CyberGame:
     def __init__(self, attacker, defender, network, settings={}):
-        self.baseNetwork = network
+        self.network = network
         self.attacker = attacker
         self.defender = defender
         self.stepHooks = []
@@ -29,7 +29,7 @@ class CyberGame:
 
     def isGameOver(self):
         return \
-            self.state.totalPwnValue() / self.state.totalValue() \
+            self.network.totalPwnValue() / self.network.totalValue() \
             >= \
             self.gameSettings.NodePwnThreshold
 
@@ -55,18 +55,10 @@ class CyberGameState:
     def __init__(self, game):
         self.elapsedTime = 0
         self.gameOverRecorded = False
-        self.network = game.baseNetwork
 
-    def totalPwnValue(self):
-        pwnValue = lambda node : node.defValue if node.isPwned() else 0
-        return sum(map(pwnValue, self.network.nodes))
-
-    def totalValue(self):
-        return sum(map(lambda node : node.defValue, self.network.nodes))
 
 class AttackerGameState(CyberGameState):
     def __init__(self, gameState):
-
         # node is visible if is pwned or is neighbour of a pwned node or is entry node
         isNodeVisible = lambda node : node.isPwned() or node.isEntry() or node.hasNeighbour(lambda n : n.isPwned())
         visibleNodes = [node for node in gameState.network.nodes if isNodeVisible(node)] 
