@@ -12,9 +12,8 @@ def fromYedGraphML(path):
     if res is None:
         raise "Couldn't load yEd GraphML file"
     net = nx.Graph(res)
-    
 
-    labelmapping = {n[0] : CyberNode(int(n[1]["description"]), True if n[1]["label"] == "entry" else False) \
+    labelmapping = {n[0] : CyberNode(int(n[1]["label"]), True if n[1]["description"] == "entry" else False) \
         for n in net.nodes(data=True)} 
     newnet = nx.relabel_nodes(net, labelmapping)
 
@@ -59,7 +58,7 @@ class NodeForDefender:
         self.isEntry = node.isEntry
         self.nid = id(node)
 
-# https://networkx.org/documentation/stable/tutorial.html
+# https://networkx.org/documentation/stable/
 class CyberNetwork:
     def __init__(self, *islands : nx.Graph):
         self.islands = islands  
@@ -72,10 +71,12 @@ class CyberNetwork:
 
     def insertNode(self, left, right):
         # not between two nodes of an island
-        if left in self.joined and right in self.joined:
-            raise GraphError("Cannot insert a node between two nodes of the original islands")
-        self.current.remove_edge(left, right)
-        newnode = self.current.add_node(CyberNode())
+        if left in self.joined and right in self.joined and left in self.joined.neighbors(right):
+            raise GraphError("Cannot insert a node between two nodes of the same original islands")
+        if self.current.has_edge(left, right):
+            self.current.remove_edge(left, right)
+        newnode = CyberNode(0, False)
+        self.current.add_node(newnode)
         self.current.add_edge(left, newnode)
         self.current.add_edge(newnode, right)
 
@@ -86,28 +87,30 @@ class CyberNetwork:
         self.current.remove_node(node)
 
     def insertLink(self, left, right):
-        # not between two nodes of an island
-        if left in self.joined and right in self.joined:
-            raise GraphError("Cannot insert a link between two nodes of the original islands")
+        # not between two nodes of the same island
+        if left in self.joined and right in self.joined and left in self.joined.neighbors(right):
+            raise GraphError("Cannot insert a link between two nodes of the same original islands")
         self.current.add_edge(left, right)
 
     def removeLink(self, left, right):
-        # not between two nodes of an island
-        if left in self.joined and right in self.joined:
-            raise GraphError("Cannot remove a link between two nodes of the original islands")
+        # not between two nodes of the same island
+        if left in self.joined and right in self.joined and left in self.joined.neighbors(right):
+            raise GraphError("Cannot remove a link between two nodes of the same original islands")
             return
-        self.current.remove_edge(left, right)
+        if self.current.has_edge(left, right):
+            self.current.remove_edge(left, right)
+        else:  
+            raise GraphError("Trying to remove an edge where none exist !")
 
     def display(self):
-        nx.draw(self.joined, with_labels=True, font_weight='bold')
+        nx.draw(self.current, with_labels=False, font_weight='bold')
         plt.show()
 
     def totalPwnValue(self):
-        pwnValue = lambda node : node.defValue if node.isPwned else 0
-        return sum(map(pwnValue, [n[1] for n in self.current.nodes]))
+        return sum(map(lambda node : node.value if node.isPwned else 0, self.current.nodes))
 
     def totalValue(self):
-        return sum(map(lambda node : node[1].value, self.current.nodes))
+        return sum(map(lambda node : node.value, self.current.nodes))
 
     def nodes(self):
         return [n for n in self.current.nodes()]
@@ -117,22 +120,24 @@ class CyberNetwork:
 
     def isPlayable(self):
         # must have no islands, at least 1 entry node, at least 1 defensive value
-        islandCount = nx.number_connected_components(self.joined)
+        islandCount = nx.number_connected_components(self.current)
         if islandCount != 1:  # quick check before looping on nodes if it's not needed
+            print("Not playable, islands : ", islandCount)
             return False
 
         entryCount = 0
-        totalDef = 0
-        for node, data in self.joined.nodes(data=True):
-            if data.isEntry:
+        totalValue = 0
+        for node in self.nodes():
+            if node.isEntry:
                 entryCount += 1
-            if data.defense:
-                totalDef += data.defense
+            totalValue += node.value
+        
+        print("entryCount, totalValue : ", entryCount, totalValue)
 
         return \
             islandCount == 1 and \
             entryCount > 0 and \
-            totalDef > 0
+            totalValue > 0
 
     def nodeHasNeighbour(self, condition):
         return [n if condition(n) else None for n in self.nodes()]

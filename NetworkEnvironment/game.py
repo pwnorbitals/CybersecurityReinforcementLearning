@@ -13,6 +13,8 @@ class CyberGameSettings:
         self.removeNodePunition = -10
         self.insertLinkPunition = 10
         self.removeLinkPunition = -10
+        self.inspectGameFrequencyAtq = 1 # %
+        self.inspectGameFrequencyDef = 1 # %
 
 class CyberGame:
     def __init__(self, attacker, defender, network, settings=CyberGameSettings()):
@@ -32,7 +34,7 @@ class CyberGame:
         return DefenderGameState(self)
 
     def gameEnd(self):
-        self.defender.punish(self.settings.defUnitPunition * self.state.elapsedTime)
+        self.defender.score -= self.settings.defUnitPunition * self.state.elapsedTime
         self.state.gameOverRecorded = True
         for hook in self.endHooks:
             hook()
@@ -48,11 +50,17 @@ class CyberGame:
     def defenseStep(self):
         action = self.defender.act(self.getDefenseState())
         self.registerDefense(action)
+        if random.randrange(100) < self.settings.inspectGameFrequencyDef:
+            self.network.display()
+            print(self.network.isPlayable())
+        
 
     def attackStep(self):
         action = self.attacker.act(self.getAttackState())
-        self.registerAction(action)
+        self.registerAttack(action)
         self.state.elapsedTime += 1
+        if random.randrange(100) < self.settings.inspectGameFrequencyAtq:
+            self.network.display()
 
     def addStepHook(self, hook):
         self.stepHooks.append(hook)
@@ -90,6 +98,7 @@ class CyberGame:
 
     def registerDefense(self, action):
         print("Received action", action["type"])
+
         try:
             if action["type"] == "changeDefense":
                 target = self.network.findNodeFromDefender(action["target"])
@@ -179,7 +188,7 @@ class AttackerGameState(CyberGameState):
 
 class DefenderGameState(CyberGameState):
     def __init__(self, game):
-        self.nodes =  [network.NodeForDefender(node) for node in game.network.nodes()] 
+        self.nodes = [network.NodeForDefender(node) for node in game.network.nodes()] 
 
         self.links = []
         for link in game.network.links():

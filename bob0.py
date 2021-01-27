@@ -15,7 +15,8 @@ attacker = actors.RandomAttacker()
 defender = actors.RandomDefender()
 
 net = network.fromYedGraphML("./entry.graphml")
-# net.display()
+net.insertLink(net.nodes()[4], net.nodes()[6])
+net.display()
 
 nbGames = 0
 last10times = []

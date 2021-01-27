@@ -15,7 +15,7 @@
   <graph edgedefault="directed" id="G">
     <data key="d0"/>
     <node id="n0">
-      <data key="d5" xml:space="preserve"><![CDATA[100]]></data>
+      <data key="d5" xml:space="preserve"><![CDATA[entry]]></data>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="30.0" width="30.0" x="1507.0" y="272.0"/>
@@ -27,7 +27,7 @@
       </data>
     </node>
     <node id="n1">
-      <data key="d5" xml:space="preserve"><![CDATA[100]]></data>
+      <data key="d5" xml:space="preserve"><![CDATA[entry]]></data>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="30.0" width="30.0" x="1136.0" y="290.0"/>
@@ -39,7 +39,7 @@
       </data>
     </node>
     <node id="n2">
-      <data key="d5" xml:space="preserve"><![CDATA[100]]></data>
+      <data key="d5" xml:space="preserve"><![CDATA[entry]]></data>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="30.0" width="30.0" x="780.0" y="300.0"/>
