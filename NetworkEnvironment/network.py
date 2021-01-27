@@ -12,17 +12,21 @@ def fromYedGraphML(path):
     if res is None:
         raise "Couldn't load yEd GraphML file"
     net = nx.Graph(res)
-    print("Loaded nodes : ", len(net.nodes))
+    
 
-    labelmapping = {n[0] : (n[0], CyberNode(int(n[1]["description"]), True if n[1]["label"] == "entry" else False)) \
+    labelmapping = {n[0] : CyberNode(int(n[1]["description"]), True if n[1]["label"] == "entry" else False) \
         for n in net.nodes(data=True)} 
     newnet = nx.relabel_nodes(net, labelmapping)
+
+    print("Loaded nodes : ", len(newnet.nodes()))
 
     #for n in net.nodes(data=True):
     #    n[1] = CyberNode(n[1]["description"], True if n[1]["label"] == "entry" else False)
 
     return CyberNetwork(newnet)
 
+class GraphError(Exception):
+    pass
 
 class CyberNode:
     def __init__(self, value, isEntry, maxVectors = 10):
@@ -66,33 +70,31 @@ class CyberNetwork:
         self.current = self.joined
     
 
-    def insertNode(self, left, right, node : CyberNode):
+    def insertNode(self, left, right):
         # not between two nodes of an island
-        if left in joined and right in joined:
-            raise "Cannot insert a node between two nodes of the original islands"
+        if left in self.joined and right in self.joined:
+            raise GraphError("Cannot insert a node between two nodes of the original islands")
         self.current.remove_edge(left, right)
-        newnode = self.current.add_node(node)
+        newnode = self.current.add_node(CyberNode())
         self.current.add_edge(left, newnode)
         self.current.add_edge(newnode, right)
 
     def removeNode(self, node):
         # not a node from an island
-        if node in joined:
-            print("Cannot remove an original node")
-            return
+        if node in self.joined:
+            raise GraphError("Cannot remove an original node")
         self.current.remove_node(node)
 
     def insertLink(self, left, right):
         # not between two nodes of an island
-        if left in joined and right in joined:
-            print("Cannot insert a link between two nodes of the original islands")
-            return
+        if left in self.joined and right in self.joined:
+            raise GraphError("Cannot insert a link between two nodes of the original islands")
         self.current.add_edge(left, right)
 
     def removeLink(self, left, right):
         # not between two nodes of an island
-        if left in joined and right in joined:
-            print("Cannot remove a link between two nodes of the original islands")
+        if left in self.joined and right in self.joined:
+            raise GraphError("Cannot remove a link between two nodes of the original islands")
             return
         self.current.remove_edge(left, right)
 
@@ -108,10 +110,10 @@ class CyberNetwork:
         return sum(map(lambda node : node[1].value, self.current.nodes))
 
     def nodes(self):
-        return [n[1] for n in self.current.nodes()]
+        return [n for n in self.current.nodes()]
 
     def links(self):
-        return [(u[1], v[1]) for u,v in self.current.edges()]
+        return [(u, v) for u,v in self.current.edges()]
 
     def isPlayable(self):
         # must have no islands, at least 1 entry node, at least 1 defensive value
@@ -136,10 +138,10 @@ class CyberNetwork:
         return [n if condition(n) else None for n in self.nodes()]
             
     def findNodeFromAttacker(self, node):
-        return [n[1] for n in self.current.nodes() if id(n[1]) == node.nid]
+        return next(n for n in self.current.nodes() if id(n) == node.nid)
 
     def findNodeFromDefender(self, node):
-        return [n[1] for n in self.current.nodes() if id(n[1]) == node.nid]
+        return next(n for n in self.current.nodes() if id(n) == node.nid)
 
 
 

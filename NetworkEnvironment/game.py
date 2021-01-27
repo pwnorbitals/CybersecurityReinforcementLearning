@@ -8,6 +8,11 @@ class CyberGameSettings:
         self.attackCost = 10
         self.maxAtqPower = 10
         self.wrongEndTurnPunition = 10
+        self.wrongGraphActionPunition = 10
+        self.insertNodePunition = 10
+        self.removeNodePunition = -10
+        self.insertLinkPunition = 10
+        self.removeLinkPunition = -10
 
 class CyberGame:
     def __init__(self, attacker, defender, network, settings=CyberGameSettings()):
@@ -56,7 +61,7 @@ class CyberGame:
         self.endHooks.append(hook)
 
     def run(self):
-        while not self.network.isPlayable():
+        while not self.state.defenderIsDone:
             self.defenseStep()
         while not self.isGameOver() :
             self.attackStep()
@@ -68,11 +73,9 @@ class CyberGame:
 
 
     def registerAttack(self, action):
+        print("Received action", action["type"])
         if action["type"] == "attack":
             attackedNode = self.network.findNodeFromAttacker(action["target"])
-            if len(attackedNode) != 1:
-                raise RuntimeError("Error in finding node from attacker : " + str(len(attackedNode)) + " results")
-            attackedNode = attackedNode[0]
             if attackedNode.defense[action["vector"]] > attackedNode.atqVectors[action["vector"]]:
                 attackedNode.isPwned = True
                 if random.randrange(100) < attackedNode.defense[action["vector"]]:
@@ -86,52 +89,64 @@ class CyberGame:
             raise RuntimeError("No such action " + action["type"] + " !")
 
     def registerDefense(self, action):
-        if action["type"] == "changeDefense":
-            target = self.network.findNodeFromDefender(action["target"])
-            old_value = target.defense[action["vector"]]
-            new_value = action["value"] 
+        print("Received action", action["type"])
+        try:
+            if action["type"] == "changeDefense":
+                target = self.network.findNodeFromDefender(action["target"])
 
-            punition_fct = lambda x : 1/(1-1/(x/100)) if x != 0 else 0
-            punition = punition_fct(new_value) - punition_fct(old_value)
+                old_value = target.defense[action["vector"]]
+                new_value = action["value"] 
 
-            target.defense[action["vector"]] = action["value"] 
-            defender.score -= punition
+                punition_fct = lambda x : 1/(1-1/(x/100)) if x != 0 else 0
+                punition = punition_fct(new_value) - punition_fct(old_value)
 
-        elif action["type"] == "changeDetection":
-            target = self.network.findNodeFromDefender(action["target"])
-            if len(target) != 1:
-                raise RuntimeError("Error in finding node from defender : " + str(len(target)) + " results")
-            target = target[0]
+                target.defense[action["vector"]] = action["value"] 
+                self.defender.score -= punition
 
-            old_value = target.detection
-            new_value = action["value"] 
+            elif action["type"] == "changeDetection":
+                target = self.network.findNodeFromDefender(action["target"])
 
-            punition_fct = lambda x : 1/(1-1/(x/100)) if x != 0 else 0
-            punition = punition_fct(new_value) - punition_fct(old_value)
+                old_value = target.detection
+                new_value = action["value"] 
 
-            target.detection = action["value"] 
-            self.defender.score -= punition
+                punition_fct = lambda x : 1/(1-1/(x/100)) if x != 0 else 0
+                punition = punition_fct(new_value) - punition_fct(old_value)
 
-        elif action["type"] == "insertNode":
-            pass
+                target.detection = action["value"] 
+                self.defender.score -= punition
 
-        elif action["type"] == "removeNode": 
-            pass
+            elif action["type"] == "insertNode":
+                self.network.insertNode(\
+                    self.network.findNodeFromDefender(action["left"]),\
+                    self.network.findNodeFromDefender(action["right"]))
+                self.defender.score -= self.settings.insertNodePunition
 
-        elif action["type"] == "endTurn":
-            if self.network.isPlayable():
-                self.state.defenderIsDone = True
+            elif action["type"] == "removeNode": 
+                self.network.removeNode(self.network.findNodeFromDefender(action["target"]))
+                self.defender.score -= self.settings.removeNodePunition
+
+            elif action["type"] == "endTurn":
+                if self.network.isPlayable():
+                    self.state.defenderIsDone = True
+                else:
+                    self.defender.score -= self.settings.wrongEndTurnPunition
+
+            elif action["type"] == "insertLink":
+                self.network.insertLink(\
+                    self.network.findNodeFromDefender(action["left"]),\
+                    self.network.findNodeFromDefender(action["right"]))
+                self.defender.score -= self.settings.insertLinkPunition
+
+            elif action["type"] == "removeLink":
+                self.network.removeLink(\
+                    self.network.findNodeFromDefender(action["left"]),\
+                    self.network.findNodeFromDefender(action["right"]))
+                self.defender.score -= self.settings.removeLinkPunition
+            
             else:
-                self.defender.score -= self.settings.wrongEndTurnPunition
-
-        elif action["type"] == "insertLink":
-            pass
-
-        elif action["type"] == "removeLink":
-            pass
-        
-        else:
-            raise RuntimeError("No such action " + action["type"] + " !")
+                raise RuntimeError("No such action " + action["type"] + " !")
+        except network.GraphError as e:
+            self.defender.score -= self.settings.wrongGraphActionPunition
 
 
 class CyberGameState:

@@ -91,8 +91,8 @@ class RandomAttacker(CyberAttacker):
 
 class RandomDefender(CyberDefender):
     def act(self, gameState):
-        action = random.randint(0, 5)
-        calls = {0: self.changeDefense, 1: self.changeDetection, 2: self.insertNode, 3: self.removeNode, 4: self.insertLink, 5: self.removeLink}
+        calls = {0: self.changeDefense, 1: self.changeDetection, 2: self.insertNode, 3: self.removeNode, 4: self.insertLink, 5: self.removeLink, 6: self.endTurn}
+        action = random.randint(0, len(calls.keys())-1)
         return calls[action](gameState)
 
     def changeDefense(self, gameState):
@@ -112,12 +112,12 @@ class RandomDefender(CyberDefender):
             right = random.randint(0, len(gameState.nodes)-1)
             if left != right:
                 break
-        return gameState.insertNode(left, right)
+        return gameState.insertNode(gameState.nodes[left], gameState.nodes[right])
 
 
     def removeNode(self, gameState):
         target = random.randint(0, len(gameState.nodes)-1)
-        return gameState.removeNode(target)
+        return gameState.removeNode(gameState.nodes[target])
 
     def insertLink(self, gameState):
         while True:
@@ -125,7 +125,7 @@ class RandomDefender(CyberDefender):
             right = random.randint(0, len(gameState.nodes)-1)
             if left != right:
                 break
-        return gameState.insertLink(left, right)
+        return gameState.insertLink(gameState.nodes[left], gameState.nodes[right])
 
     def removeLink(self, gameState):
         while True:
@@ -133,4 +133,7 @@ class RandomDefender(CyberDefender):
             right = random.randint(0, len(gameState.nodes)-1)
             if left != right:
                 break
-        return gameState.removeLink(left, right)
+        return gameState.removeLink(gameState.nodes[left], gameState.nodes[right])
+
+    def endTurn(self, gameState):
+        return gameState.endTurn()
