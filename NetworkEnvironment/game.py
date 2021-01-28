@@ -93,7 +93,7 @@ class CyberGame:
                 if random.randrange(100) < attackedNode.defense[action["vector"]]:
                     self.state.attackDetected = True
                     self.attacker.score -= self.settings.attackerDetectedPunition
-                    self.defender.score += self.setting.attackerDetectedReward
+                    self.defender.score += self.settings.attackerDetectedReward
             else:
                 attackedNode.atqVectors[action["vector"]] += random.randint(0, self.settings.maxAtqPower)
             self.attacker.score -= self.settings.attackCost

@@ -1,6 +1,26 @@
 import random
 import networkx as nx
+import sys
+import time
+import multiprocessing
+
+import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+matplotlib.use('Qt5Agg')
+plt.style.use('ggplot')
+
+from PyQt5.QtCore import Qt
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtGui import QIcon
+
+
+
+       
+
+
 
 class CyberAttacker():
     def __init__(self):
@@ -23,49 +43,85 @@ class CyberDefender():
     def viewGame(self, gameState):
         pass
 
+
+
 class HumanDefender(CyberDefender):
+    class Canvas(FigureCanvas):
+        def __init__(self, parent=None, width=5, height=4, dpi=300):
+            fig = Figure(figsize=(width, height), dpi=dpi, facecolor="#f0f0f0")
+            self.fig = fig
+            self.axes = fig.add_subplot(111)
+            FigureCanvas.__init__(self, fig)
+
+            FigureCanvas.__init__(self, fig)
+            self.setParent(parent)
+
+            FigureCanvas.setSizePolicy(self,
+                                    QtWidgets.QSizePolicy.Expanding,
+                                    QtWidgets.QSizePolicy.Expanding)
+            FigureCanvas.updateGeometry(self)
+
+    class DefWindow(QtWidgets.QMainWindow):
+        def __init__(self, parent, recvQueue, sendQueue):
+            QtWidgets.QMainWindow.__init__(self)
+            self.parent = parent
+            self.setAttribute(Qt.WA_DeleteOnClose)
+            self.setWindowTitle("HumanCyberDefender")
+            self.main_widget = QtWidgets.QWidget(self)
+            self.main_widget.setFocus()
+            self.setCentralWidget(self.main_widget)
+            self.grid = QtWidgets.QGridLayout(self.main_widget)
+            
+            # Top : graph
+            self.graphWidget = HumanDefender.Canvas(self.main_widget)
+            self.grid.addWidget(self.graphWidget, 0, 0, 1, 2)
+
+
+            # Bottom left : state and node information
+            self.infoWidget = QtWidgets.QGridLayout(self.main_widget)
+            self.grid.addLayout(self.infoWidget, 1, 0)
+            self.scoreLabel = QtWidgets.QLabel()
+            self.scoreLabel.setText("Score : [loading]")
+            self.infoWidget.addWidget(self.scoreLabel, 1, 0)
+            self.nodeLabel = QtWidgets.QLabel()
+            self.nodeLabel.setText("Selected node : [loading]")
+            self.infoWidget.addWidget(self.nodeLabel, 2, 0)
+
+            # Bottom right : choices
+            self.choiceWidget = QtWidgets.QGridLayout(self.main_widget)
+            self.grid.addLayout(self.choiceWidget, 1, 1)
+            self.testButton = QtWidgets.QPushButton('test')
+            self.choiceWidget.addWidget(self.testButton, 1, 0)
+
+            while True:
+                ax = recvQueue.get() # blocks
+                self.graphWidget.axes = ax
+
+    
+    def __init__(self):
+        self.sendQueue = multiprocessing.Queue()
+        self.recvQueue = multiprocessing.Queue()
+        self.process = multiprocessing.Process(target=self.showWindow, args=(self.sendQueue,self.recvQueue, ))
+        self.process.start()
+
+    def __del__(self):
+        self.process.join()
+
+        
+    def showWindow(self, sendQueue, recvQueue):
+        qApp = QtWidgets.QApplication(sys.argv)
+        self.aw = HumanDefender.DefWindow(self, sendQueue, recvQueue)
+        self.aw.setWindowTitle("CyberDefender")
+        #aw.setWindowIcon(QIcon(scriptDir + os.path.sep + '..' + os.path.sep + 'img' + os.path.sep + 'LOGO6.png'))
+        self.aw.show()
+        sys.exit(qApp.exec_())
+
+        
+
+
     def act(self, gameState):
-        print("The current game state is :")
         self.showState(gameState)
-        print("Choose an action : ")
-        print(" 1 - Improve detection for a node")
-        print(" 2 - Improve defense for an attack vector")
-        print(" 3 - Insert a node")
-        print(" 4 - End modifications")
-        action = int(input())
-        calls = {1: self.improveDetection, 2: self.improveDefense, 3: self.insertNode, 4: gameState.endTurn}
-        calls[action](gameState)
 
-    def changeDetection(self, gameState):
-        print("Choose a node :")
-        nodeId = str(input())
-        node = gameState.getNode(nodeId)
-        print("Current detection value is " + node.detectionValue + ".")
-        print("Choose how much to increase : ")
-        increment = int(input())
-        return gameState.reinforceDetection(node)
-
-
-    def changeDefense(self):
-        print("Choose a node :")
-        nodeId = str(input())
-        node = gameState.getNode(nodeId)
-        print("Current defense values are " + node.defenseValues + ".")
-        print("Choose the defense value to increase : ")
-        value = int(input())
-        print("Choose how much to increase : ")
-        increment = int(input())
-        return gameState.reinforceDefense(node, value, increment)
-
-    def insertNode(self):
-        print("choose a first node :")
-        print("choose a second node :")
-        # defensive value is zero
-        print("choose the detection value :")
-        print("The new node has X attack vectors")
-        print("choose the defense values :")
-
-        return 
     
     def showState(self, state):
         graph = nx.Graph()
@@ -73,8 +129,13 @@ class HumanDefender(CyberDefender):
             graph.add_node(node)
         for link in state.links:
             graph.add_edge(link[0], link[1])
-        nx.draw(graph, font_weight='bold')
-        plt.show()
+
+        fig = plt.figure()
+        ax = fig.add_subplot()
+        nx.draw(graph, font_weight='bold', ax=ax)
+        self.sendQueue.put(ax)
+        action = self.recvQueue.get()
+        return action
 
 class HumanAttacker(CyberAttacker):
     def act(self, gameState):

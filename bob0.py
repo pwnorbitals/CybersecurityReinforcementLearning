@@ -12,7 +12,7 @@ def maybeInspectResults(result):
     pass
 
 attacker = actors.RandomAttacker()
-defender = actors.RandomDefender()
+defender = actors.HumanDefender()
 
 net = network.fromYedGraphML("./entry.graphml")
 net.insertLink(net.nodes()[4], net.nodes()[6])
