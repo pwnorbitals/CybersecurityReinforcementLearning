@@ -40,26 +40,52 @@ class QDefender(actors.CyberDefender, alpha, epsilon, gamma):
         self.epsilon = epsilon # exploration
         self.gamma = gamma     # "discount rate"
 
+    def Q(self, state):
+        # return all the action-value for a possible state
+        return QMatrix[state,:]  # QMatrix need to be defined :) 
+
+    
+    def setValue(self, state, action):
+
     def act(self, gameState):
         # gameState has nodes, links, timeElapsed
         # self has score
+        action = self.get_action(gameState)
+
+
+
+        print(self.score)
+
+
+
         pass
 
-    def get_value(self, state): 
-        pass
+    def get_bestValue(self, state):
+        numberOfActions = len(state.actions)
+        bestValue = np.max(self.Q(state))
+        return BestValue
 
-    def get_bestaction(self, state):
-        pass 
+    def get_bestAction(self, state): 
+        numberOfActions = len(state.actions)
+        bestAction = np.argmax(self.S(state))
+        return bestAction
 
-    def get_action(self, action):
-        pass 
+    def get_action(self, state):
+        probabilityChoice = random.random()
+        if probabilityChoice <= self.epsilon :
+            chosen_action = random.choice(len(self.Q(state)))
+        else : 
+            chosen_action = self.get_bestAction(state)
 
-    def uptdate(self, state, action):
-        pass 
-        
+
+    def update(self, state, action, reward, next_state):
+        QOld = self.get_bestValue(state)
+        Q = (1 - alpha) * QOld + alpha * (reward + gamma *self.get_bestValue(next_state) )
+        self.Q(state)[action] = Q 
+    
 
 attacker = actors.RandomAttacker()
-defender = QDefender()
+defender = QDefender(alpha=0.5, epsilon=0.3, gamma=0.7)
 
 net = network.fromYedGraphML("./entry.graphml")
 net.insertLink(net.nodes()[4], net.nodes()[6])

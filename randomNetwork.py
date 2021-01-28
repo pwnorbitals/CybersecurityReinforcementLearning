@@ -2,6 +2,7 @@ from NetworkEnvironment import game, actors, network
 import numpy
 import matplotlib.pyplot as plt
 import copy
+import os
 
 def maybeInspectState(state):
     pass
@@ -17,7 +18,7 @@ def maybeInspectResults(result):
 attacker = actors.RandomAttacker()
 defender = actors.RandomDefender()
 
-net = network.fromYedGraphML("./entry.graphml")
+net = network.fromYedGraphML(os.path.join(os.path.dirname(os.path.realpath(__file__)), "./entry.graphml"))
 net.display()
 
 nbGames = 0
@@ -36,13 +37,14 @@ while nbGames < 200:
         last10times.pop(0)
     last10times.append(results.elapsedTime)
     maybeInspectActor(defender)
+    gameResults.append(results.elapsedTime)
     nbGames += 1
 
 window_size = 10
 i = 0
 moving_averages = []
 while i < len(gameResults) - window_size + 1:
-    this_window = gameResults[i : i + window_size]
+    this_window = gameResults[i : i + window_size] 
     window_average = sum(this_window) / window_size
     moving_averages.append(window_average)
     i += 1

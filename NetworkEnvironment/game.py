@@ -18,6 +18,9 @@ class CyberGameSettings:
         self.attackerDetectedPunition = 1000
         self.attackerDetectedReward = 100
 
+class CyberGameError(Exception):
+    pass
+
 class CyberGame:
     def __init__(self, attacker, defender, network, settings=CyberGameSettings()):
         self.network = network
@@ -53,7 +56,7 @@ class CyberGame:
     def defenseStep(self):
         action = self.defender.act(self.getDefenseState())
         self.registerDefense(action)
-        if random.randrange(100) < self.settings.inspectGameFrequencyDef:
+        if random.randrange(100) < self.settings.inspectGameFrequencyDef or self.state.defStep > 1000:
             self.network.display()
             print(self.network.isPlayable())
         
@@ -62,7 +65,13 @@ class CyberGame:
         action = self.attacker.act(self.getAttackState())
         self.registerAttack(action)
         self.state.elapsedTime += 1
-        if random.randrange(100) < self.settings.inspectGameFrequencyAtq:
+        if random.randrange(100) < self.settings.inspectGameFrequencyAtq or self.state.atqStep > 1000:
+            print("atqStep : ", self.state.atqStep)
+            print(action)
+            print(vars(action["target"]))
+            print(self.isGameOver(), self.network.totalPwnValue() / self.network.totalValue(), \
+                self.settings.nodePwnThreshold, \
+                self.state.attackDetected)
             self.network.display()
 
     def addStepHook(self, hook):
@@ -74,11 +83,13 @@ class CyberGame:
     def run(self):
         while not self.state.defenderIsDone:
             self.defenseStep()
+            self.state.defStep += 1
         print("Defender is done, score : ", self.defender.score)
         #self.network.display()
         #print("Is game already over", self.isGameOver())
         while not self.isGameOver() :
             self.attackStep()
+            self.state.atqStep += 1
             for hook in self.stepHooks:
                 hook(self.state)
         print("Attacker is done, score : ", self.attacker.score)
@@ -90,7 +101,8 @@ class CyberGame:
     def registerAttack(self, action):
         if action["type"] == "attack":
             attackedNode = self.network.findNodeFromAttacker(action["target"])
-            if attackedNode.defense[action["vector"]] > attackedNode.atqVectors[action["vector"]]:
+            # print(attackedNode.defense, "vs", attackedNode.atqVectors, "for vect", action["vector"])
+            if attackedNode.defense[action["vector"]] < attackedNode.atqVectors[action["vector"]]:
                 attackedNode.isPwned = True
                 if random.randrange(100) < attackedNode.defense[action["vector"]]:
                     self.state.attackDetected = True
@@ -112,6 +124,10 @@ class CyberGame:
 
                 old_value = target.defense[action["vector"]]
                 new_value = action["value"] 
+                
+                if new_value >= 100 or new_value <= 0:
+                    self.defender.score -= self.settings.wrongGraphActionPunition
+                    raise CyberGameError("Wrong changeDefense action value")
 
                 punition_fct = lambda x : 1/(1-1/(x/100)) if x != 0 else 0
                 punition = punition_fct(new_value) - punition_fct(old_value)
@@ -124,6 +140,10 @@ class CyberGame:
 
                 old_value = target.detection
                 new_value = action["value"] 
+
+                if new_value >= 100 or new_value <= 0:
+                    self.defender.score -= self.settings.wrongGraphActionPunition
+                    raise CyberGameError("Wrong changeDefense action value")
 
                 punition_fct = lambda x : 1/(1-1/(x/100)) if x != 0 else 0
                 punition = punition_fct(new_value) - punition_fct(old_value)
@@ -171,6 +191,8 @@ class CyberGameState:
         self.network = game.network
         self.attackDetected = False
         self.defenderIsDone = False
+        self.defStep = 0
+        self.atqStep = 0
 
 class AttackerGameState(CyberGameState):
     def __init__(self, game):
@@ -201,6 +223,15 @@ class DefenderGameState(CyberGameState):
             self.links.append((first, second))  
 
         self.elapsedTime = game.state.elapsedTime
+        self.actions = [
+            {"name": "changeDefense", "fct" : self.changeDefense},
+            {"name": "changeDetection", "fct": self.changeDetection}, 
+            {"name": "insertNode", "fct": self.insertNode}, 
+            {"name": "removeNode", "fct": self.removeNode}, 
+            {"name": "insertLink", "fct": self.insertLink}, 
+            {"name": "removeLink", "fct": self.removeLink}, 
+            {"name": "endTurn", "fct": self.endTurn}
+        ]
 
     def changeDefense(self, node, vector, value):
         return {"type": "changeDefense", "target": node, "vector": vector, "value": value}
