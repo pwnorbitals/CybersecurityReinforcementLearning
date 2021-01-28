@@ -71,8 +71,8 @@ class CyberNetwork:
 
     def insertNode(self, left, right):
         # not between two nodes of an island
-        if left in self.joined and right in self.joined and left in self.joined.neighbors(right):
-            raise GraphError("Cannot insert a node between two nodes of the same original islands")
+        #if left in self.joined and right in self.joined and left in self.joined.neighbors(right):
+        #    raise GraphError("Cannot insert a node between two nodes of the same original islands")
         if self.current.has_edge(left, right):
             self.current.remove_edge(left, right)
         newnode = CyberNode(0, False)

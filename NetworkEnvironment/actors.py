@@ -3,6 +3,7 @@ import networkx as nx
 import sys
 import time
 import multiprocessing
+import threading
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -17,33 +18,23 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 
 
-
-       
-
-
-
-class CyberAttacker():
+class CyberAgent():
     def __init__(self):
         self.score = 0
-
+    
     def act(self, gameState):
         pass
 
     def viewGame(self, gameState):
         pass
 
-class CyberDefender():
+class CyberAttacker(CyberAgent):
     def __init__(self):
-        self.score = 0
-        pass
+        super().__init__()
 
-    def act(self, gameState):
-        pass
-
-    def viewGame(self, gameState):
-        pass
-
-
+class CyberDefender(CyberAgent):
+    def __init__(self):
+        super().__init__()
 
 class HumanDefender(CyberDefender):
     class Canvas(FigureCanvas):
@@ -51,8 +42,6 @@ class HumanDefender(CyberDefender):
             fig = Figure(figsize=(width, height), dpi=dpi, facecolor="#f0f0f0")
             self.fig = fig
             self.axes = fig.add_subplot(111)
-            FigureCanvas.__init__(self, fig)
-
             FigureCanvas.__init__(self, fig)
             self.setParent(parent)
 
@@ -63,6 +52,10 @@ class HumanDefender(CyberDefender):
 
     class DefWindow(QtWidgets.QMainWindow):
         def __init__(self, parent, recvQueue, sendQueue):
+            super().__init__()
+            self.recvQueue = recvQueue
+            self.sendQueue = sendQueue
+
             QtWidgets.QMainWindow.__init__(self)
             self.parent = parent
             self.setAttribute(Qt.WA_DeleteOnClose)
@@ -93,12 +86,21 @@ class HumanDefender(CyberDefender):
             self.testButton = QtWidgets.QPushButton('test')
             self.choiceWidget.addWidget(self.testButton, 1, 0)
 
+            self.thread = threading.Thread(target=self.eventLoop)
+            self.thread.start()
+
+        def eventLoop(self):
             while True:
-                ax = recvQueue.get() # blocks
-                self.graphWidget.axes = ax
+                ax = self.recvQueue.get() # blocks
+                self.graphWidget.axes.clear()
+                #self.graphWidget.axes = ax
+                self.graphWidget.axes.plot([1, 2, 3, 4])
+                self.graphWidget.draw()
+                self.graphWidget.flush_events()
 
     
     def __init__(self):
+        super().__init__()
         self.sendQueue = multiprocessing.Queue()
         self.recvQueue = multiprocessing.Queue()
         self.process = multiprocessing.Process(target=self.showWindow, args=(self.sendQueue,self.recvQueue, ))
@@ -147,7 +149,6 @@ class HumanAttacker(CyberAttacker):
     def showState(self, state):
         print(vars(state))
         
-
 class RandomAttacker(CyberAttacker):
     def act(self, gameState):
         target = random.randint(0, len(gameState.nodes)-1)
@@ -180,7 +181,6 @@ class RandomDefender(CyberDefender):
             if left != right:
                 break
         return gameState.insertNode(gameState.nodes[left], gameState.nodes[right])
-
 
     def removeNode(self, gameState):
         target = random.randint(0, len(gameState.nodes)-1)

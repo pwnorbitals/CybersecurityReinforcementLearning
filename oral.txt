@@ -1,0 +1,54 @@
+
+Plan : 
+
+
+2
+>>> Intro
+Expliquer le PMI, en quoi ça consiste, nos objectifs (tableau/CdC ?) 
+grille de notation
+Storytelling
+
+10
+>>>IA overview 
+Reinforcment learning 
+C'est quoi un environement ?
+Q et DQN 
+Proof of concept 
+
+5
+>>>Cyber Overview 
+méthodologie => ce qu'on a fait (matrice, papiers applicatifs), regroupement (catégories) justification
+
+beaucoup/ pas beaucoup -> Pk ?
+Quel type d'application c'est -> attaque ou defense ? -> Pk ? 
+exemples?
+
+10
+>>>Env
+Network
+-> motivation (aucun autre travail ?!)
+-> approche (définition du pb, justification pour RL)
+-> inspiration (paper)
+-> architecture
+-> démo ?
+-> résultats
+-> 
+OSINT
+-> motivation 
+-> approche (---)
+-> inspiration (pas existant je crois)
+-> archi (---)
+-> démo? ?
+-> résultats???
+
+5
+>>>Ouverture 
+- ce qu'on a fait / copier le tableau du début et dire ce qu'on à réussi à implementer 
+- comment aller plus loin / résultats possibles
+
+2
+>>Conclusion
+- contraintes, contents ou pas 
+- dossier écrit & github
+- deadlines pour l'IPSA
+- pourquoi on voulait faire ça, ce que ça nous a apporté (Baptiste connaissait l'IA mais ne pensait pas que c'était si différent -> certification)

@@ -42,6 +42,7 @@ class CyberGame:
             hook()
 
     def isGameOver(self):
+        #print(self.network.totalPwnValue(), self.network.totalValue(), self.settings.nodePwnThreshold, self.state.attackDetected)
         return \
             self.network.totalPwnValue() / self.network.totalValue() \
             >= \
@@ -74,7 +75,8 @@ class CyberGame:
         while not self.state.defenderIsDone:
             self.defenseStep()
         print("Defender is done, score : ", self.defender.score)
-        self.network.display()
+        #self.network.display()
+        #print("Is game already over", self.isGameOver())
         while not self.isGameOver() :
             self.attackStep()
             for hook in self.stepHooks:
@@ -162,7 +164,6 @@ class CyberGame:
         except network.GraphError as e:
             self.defender.score -= self.settings.wrongGraphActionPunition
 
-
 class CyberGameState:
     def __init__(self, game):
         self.elapsedTime = 0
@@ -170,7 +171,6 @@ class CyberGameState:
         self.network = game.network
         self.attackDetected = False
         self.defenderIsDone = False
-
 
 class AttackerGameState(CyberGameState):
     def __init__(self, game):
@@ -182,7 +182,7 @@ class AttackerGameState(CyberGameState):
         visibleNodes = [network.NodeForAttacker(node) for node in game.network.nodes() if isNodeVisible(node)] 
 
         isLinkVisible = lambda link : link[0].isPwned and link[1].isPwned
-        visibleLinks = [link for link in game.network.links() if isLinkVisible(link)]
+        visibleLinks = [link for link in game.network.links() if isLinkVisible(link)]  # BUG
 
         self.nodes = visibleNodes
         self.links = visibleLinks
@@ -190,7 +190,6 @@ class AttackerGameState(CyberGameState):
     def attack(self, node, vector):
         return {"type": "attack", "target": node, "vector": vector}
         
-
 class DefenderGameState(CyberGameState):
     def __init__(self, game):
         self.nodes = [network.NodeForDefender(node) for node in game.network.nodes()] 
@@ -200,6 +199,8 @@ class DefenderGameState(CyberGameState):
             first = next(node for node in self.nodes if id(link[0]) == node.nid)  
             second = next(node for node in self.nodes if id(link[1]) == node.nid)
             self.links.append((first, second))  
+
+        self.elapsedTime = game.state.elapsedTime
 
     def changeDefense(self, node, vector, value):
         return {"type": "changeDefense", "target": node, "vector": vector, "value": value}
